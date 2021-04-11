@@ -1,0 +1,24 @@
+FROM python:3.8
+
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev 
+
+RUN pip install --no-cache-dir --upgrade pip
+
+# Username to be used for the container
+ENV DOCKER_USER dev
+
+# Add aforementioned user
+# Don't use password since we run in a local environment
+RUN adduser --disabled-password --gecos '' "$DOCKER_USER"
+RUN adduser "$DOCKER_USER" sudo \
+	&& echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Switch to our newly created user
+USER "$DOCKER_USER"
+
+
+RUN mkdir /home/$DOCKER_USER/devel
+WORKDIR "/home/$DOCKER_USER/devel"

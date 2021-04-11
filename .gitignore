@@ -8,6 +8,3 @@ __pycache__/
 .cmp
 *.infected
 .sym_logs
-Dockerfiles/
-bin/
-.project_name
