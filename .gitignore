@@ -8,3 +8,4 @@ __pycache__/
 .cmp
 *.infected
 .sym_logs
+testing/test_target.out
