@@ -1,0 +1,13 @@
+*.pyc
+__pycache__/
+.idea/
+*.o
+*.swp
+*.dSYM
+*.gch
+.cmp
+*.infected
+.sym_logs
+Dockerfiles/
+bin/
+.project_name
