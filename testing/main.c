@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 int protected_malloc_call(void)
 {
@@ -15,9 +16,10 @@ int protected_malloc_call(void)
 
 void unprotected_malloc_call(void)
 {
-	void *tmp;
+	char *tmp;
 
 	tmp = malloc(1);
+	tmp[0] = 'a';
 	free(tmp);
 }
 
@@ -25,7 +27,11 @@ int main(void)
 {
 	unprotected_malloc_call();
 	if (protected_malloc_call() != 0)
+	{
+		puts("Allocation failed ! ...");
 		return (1);
+	}
 	unprotected_malloc_call();
+	puts("Terminating ...");
 	return (0);
 }
