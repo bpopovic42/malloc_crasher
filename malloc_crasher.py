@@ -5,10 +5,11 @@ import sys
 
 from typing import List, Tuple
 
+COLOR_SIZE = 5
 COLOR_RED = '\033[91m'
 COLOR_GRN = '\033[92m'
 COLOR_YLW = '\033[93m'
-COLOR_END = '\033[0m'
+COLOR_END = '\033[00m'
 
 
 class Flags():
@@ -44,24 +45,33 @@ def parse_program_args(program_args: List[str]) -> Tuple[str, List[str]]:
     return target_program, parameters
 
 
-def get_target_program_content(target_program: str) -> bytes:
+def get_target_program_content(target_program: str) -> str:
     with open(target_program, "rb") as f:
-        content = f.read()
+        content = f.read().hex()
         f.close()
-    return binascii.hexlify(content)
+    #for i in range(0, len(content), 1024):
+        #print(content[i:i+1024])
+    return content
 
 
-def print_initial_info(infected_binary_name: str, infected_binary_content: bytes, position: int, infected_opcode: str):
-    print(COLOR_YLW + " TARGET CODE ".center(37, "-") + COLOR_END)
-    print(COLOR_YLW + "| " + "Malloc call {}/{}".format(1, 2).center(37, " ") + " |" + COLOR_END)
-    for i in range(position - 41, position + 51, 33):
-        binary_chunk = str(infected_binary_content[i:i + 33])
-        if i == position - 41:
-            print(" | ... " + binary_chunk[4:] + " |")
-        elif i == position - 9:
-            print("| " + binary_chunk[:9] + COLOR_RED + binary_chunk[9:len(infected_opcode)] + COLOR_END + binary_chunk[9 + len(infected_opcode):] + " |")
-        else:
-            print("| " + binary_chunk + " |")
+def print_initial_info(infected_binary_name: str, content: str, position: int, infected_opcode: str):
+    malloc = content[position : position + 10]
+    l1  = " {}TARGET CODE{} ".format(COLOR_GRN, COLOR_END)
+    l2  = " {}malloc call {}{}/{}{}".format(COLOR_YLW, COLOR_GRN, 1, 2, COLOR_END)
+    l3  = "... " + content[position - 38: position - 9]
+    l4  = (
+            content[position - 9 : position] +
+            "{}[{}]{}".format(COLOR_GRN, content[position : position + 10], COLOR_END) +
+            content[position + 10 : position + 10 + 12]
+    )
+    l5 = content[position + 10 + 12 : position + 51] + " ..."
+    l6 = " {}[call malloc] {}{}".format(COLOR_GRN, " ".join([malloc[i:i+2] for i in range(0, len(malloc), 2)]), COLOR_END)
+    print(" " + l1.center(37 + COLOR_SIZE * 2, "-") + " ")
+    print("| " + l2.center(35 + COLOR_SIZE * 3, " ") + " |")
+    print("| " + l3.center(35, " ") + " |")
+    print("| " + l4.center(35 + COLOR_SIZE * 2, " ") + " |")
+    print("| " + l5.center(35, " ") + " |")
+    print("| " + l6.ljust(35 + COLOR_SIZE * 2, " ") + " |")
     #print(COLOR_YLW + ">> " + infected_binary_name + " <<")
 
 
@@ -71,8 +81,8 @@ def prompt_user_to_proceed(infected_binary_name: str):
     print(COLOR_YLW + "-> Running " + infected_binary_name + " with vulnerable code...\n")
 
 
-def create_infected_binary(infected_binary_name: str, source_binary_content: bytes, opcode_position: int, opcode_length: int):
-    infected_opcode: bytes = b"4831c09090" # Xor RAX register + 2 NO-OPS to override total malloc opcode length
+def create_infected_binary(infected_binary_name: str, source_binary_content: str, opcode_position: int, opcode_length: int):
+    infected_opcode: str = "4831c09090" # Xor RAX register + 2 NO-OPS to override total malloc opcode length
     infected_content = (
             source_binary_content[:opcode_position]
             + infected_opcode
@@ -112,10 +122,10 @@ def main():
     flags.has_interactive = True
     target_program, parameters = parse_program_args(sys.argv)
     malloc_opcodes = get_malloc_opcodes(target_program)
-    source_binary_content: bytes = get_target_program_content(target_program)
+    source_binary_content: str = get_target_program_content(target_program)
     for opcode in malloc_opcodes:
         print(opcode)
-        opcode_position = str(source_binary_content).find(opcode) - 2 # TODO: determine the reason for this 2 bytes offset
+        opcode_position = source_binary_content.find(opcode) # TODO: determine the reason for this 2 bytes offset
         print(opcode_position)
         infected_binary_name: str = target_program + ".infected"
         create_infected_binary(infected_binary_name, source_binary_content, opcode_position, len(opcode))
