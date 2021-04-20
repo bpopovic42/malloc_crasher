@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 COLOR_SIZE = 5
 COLOR_RED = '\033[91m'
@@ -13,8 +13,8 @@ COLOR_END = '\033[00m'
 
 
 class Flags():
-    def __init__(self, has_interactive=True):
-        self.has_interactive = has_interactive
+    def __init__(self):
+        self.has_print = False
         self.has_record = False
         self.has_output_destination = False
         self.output_destination = None
@@ -157,31 +157,100 @@ def run_infections(flags: Flags, original_binary_name: str, original_binary_cont
         infected_binary_name: str = get_infected_binary_name(flags, original_binary_name, calls_count)
         opcode_position = original_binary_content.find(opcode)
         create_infected_binary(infected_binary_name, original_binary_content, opcode_position, len(opcode))
-        if flags.has_interactive:
+        if flags.has_print:
             print_initial_info(original_binary_content, opcode_position, len(malloc_opcodes), calls_count)
             print_infection(original_binary_content, opcode_position, len(malloc_opcodes), calls_count)
             prompt_user_to_proceed(infected_binary_name)
         infected_binary_process: subprocess.CompletedProcess = run_infected_binary(flags, infected_binary_name)
         crash_count += 1 if infected_binary_process.returncode < 0 else 0
-        if flags.has_interactive:
+        if flags.has_print:
             print_execution_info(infected_binary_process, len(malloc_opcodes), crash_count)
         calls_count += 1
+        return crash_count
 
 
-def parse_program_args(program_args: List[str]) -> Tuple[str, List[str]]:
-    target_program = program_args[1]
-    parameters = []
-    return target_program, parameters
+def print_usage():
+    print(
+        "USAGE: ./malloc_crasher [OPTION]... [ELF_BINARY]\n"
+        "Sequentially replaces every call to malloc in [ELF_BINARY] by a custom opcode sequence returning NULL.\n"
+        "Checks whether each of those calls were properly protected against allocation failures by looking at the infected"
+        " [ELF_BINARY]'s exit code\n"
+        "\n"
+        "OPTIONS:\n"
+        "\t-h" "\t\t" "Print this message.\n"
+        "\t-o [PATH]" "\t" "Use [PATH] as an output directory for infected binaries produced by this program.\n"
+        "\t-p" "\t\t" "Print info and results during execution. (Print mode)\n"
+        "\t-r" "\t\t" "Record every replaced call to malloc into its own separate binary.\n"
+        "\n"
+        "EXIT STATUS:\n"
+        "\t0 if OK,\n"
+        "\t1 if unprotected mallocs were found,\n"
+        "\t-1 in case of error (e.g, invalid command-line argument).\n"
+        "\n"
+        "NOTES:\n"
+        "This program requires python 3.8"
+    )
+
+
+def set_command_line_flags(flags: Flags, flag_list: str, next_argument: Optional[str]) -> int:
+    if "h" in flag_list:
+        print_usage()
+        exit(0)
+    for flag in flag_list:
+        if flag == "p":
+            flags.has_print = True
+        elif flag == "o":
+            if not next_argument or not os.path.isdir(next_argument):
+                print("Error: Invalid output directory '{}'")
+                return 1
+            else:
+                flags.has_output_destination = True
+                flags.output_destination = next_argument
+        elif flag == "r":
+            flags.has_record = True
+    return 0
+
+
+def parse_program_args(program_args: List[str]) -> Tuple[str, Flags]:
+    flags: Flags = Flags()
+    target_binary: Optional[str] = None
+    if len(program_args) < 2:
+        print_usage()
+        exit(-1)
+    for i in range(0, len(program_args)):
+        next_argument: Optional[str] = program_args[i + 1] if i < len(program_args) - 1 else None
+        if i == 0:
+            pass
+        elif program_args[i][0] == "-":
+            if set_command_line_flags(flags, program_args[i][1:], next_argument) == 1:
+                print("Run './{} -h' for usage".format(program_args[0]))
+                exit(-1)
+            if "o" in program_args[i]:  # If output directory flag
+                i += 1  # Skip the following argument
+        else:
+            if not target_binary:
+                target_binary = program_args[i]
+            else:
+                print("Error: Multiple targets provided\n")
+                print("Run './{} -h' for usage".format(program_args[0]))
+                exit(-1)
+        i += 1
+        print(i)
+    if not target_binary:
+        print("Error: No target specified\n"
+              "Run ./{} -h for usage".format(program_args[0]))
+        exit(-1)
+    return target_binary, flags
 
 
 def main():
-    flags: Flags = Flags()
     original_binary_name: str
-    parameters: List[str]
-    original_binary_name, parameters = parse_program_args(sys.argv)
+    flags: Flags
+    original_binary_name, flags = parse_program_args(sys.argv)
     malloc_opcodes: List[str] = get_malloc_opcodes(original_binary_name)
     original_binary_content: str = get_target_program_content(original_binary_name)
-    run_infections(flags, original_binary_name, original_binary_content, malloc_opcodes)
+    crashes: int = run_infections(flags, original_binary_name, original_binary_content, malloc_opcodes)
+    exit(1 if crashes > 0 else 0)
 
 
 if __name__ == '__main__':
