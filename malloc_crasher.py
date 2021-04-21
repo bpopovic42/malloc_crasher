@@ -271,7 +271,7 @@ def run_infections(args: Args, original_binary_name: str, original_binary_conten
         if args.has_print:
             print_execution_info(infected_binary_process, len(malloc_opcodes), crash_count)
         calls_count += 1
-        return crash_count
+    return crash_count
 
 
 def main():
