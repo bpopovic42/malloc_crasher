@@ -113,7 +113,7 @@ def print_execution_info(infected_binary_process: subprocess.CompletedProcess, t
         print(COLOR_YLW + "Target output is empty\n" + COLOR_END)
     else:
         print(COLOR_YLW + "Target output :" + COLOR_END)
-        if infected_binary_stdout != "": print(infected_binary_stdout)
+        # if infected_binary_stdout != "": print(infected_binary_stdout)
         if infected_binary_stderr != "": print(infected_binary_stderr)
     print(COLOR_YLW + "CRASH : " + COLOR_END, end="")
     if infected_binary_process.returncode < 0:
