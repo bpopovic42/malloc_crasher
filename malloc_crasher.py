@@ -101,7 +101,8 @@ def print_infection(content: str, position: int, total_calls: int, calls_count: 
 def prompt_user_to_proceed(infected_binary_path: str):
     print(COLOR_GRN + ">> ENTER TO RUN <<".center(35, " ") + COLOR_END)
     input("")
-    print(COLOR_YLW + ("-> Running " + os.path.basename(infected_binary_path) + " with vulnerable code...\n") + COLOR_END)
+    print(
+        COLOR_YLW + ("-> Running " + os.path.basename(infected_binary_path) + " with vulnerable code...\n") + COLOR_END)
 
 
 def print_execution_info(infected_binary_process: subprocess.CompletedProcess, total_nbr_of_calls: int,
@@ -154,7 +155,7 @@ def check_for_invalid_options(program_args: List[str]) -> int:
         if program_args[i][0] != "-":
             pass
         elif program_args[i] not in ("-a", "-o", "-p", "-r"):
-            print("Error: invalid option '-{}'".format(program_args[i]))
+            print("Error: invalid option '{}'".format(program_args[i]))
             return -1
         elif program_args[i] == "-a" and i == len(program_args) - 1:
             print("Error: No arguments provided for option '-a'".format(program_args[i]))
@@ -233,15 +234,13 @@ def run_infected_binary(args: Args, infected_binary_path: str) -> subprocess.Com
 def create_infected_binary(infected_binary_path: str, original_binary_content: str, opcode_position: int,
                            opcode_length: int):
     infected_opcode: str = "4831c09090"  # Xor RAX register + 2 NO-OPS to override total malloc opcode length
-    infected_content = (
-            original_binary_content[:opcode_position]
-            + infected_opcode
-            + original_binary_content[opcode_position + opcode_length:]
+    infected_binary_content: bytes = binascii.unhexlify(
+        original_binary_content[:opcode_position]
+        + infected_opcode
+        + original_binary_content[opcode_position + opcode_length:]
     )
-    infected_binary_content = binascii.unhexlify(infected_content)
     with open(infected_binary_path, "wb+") as f:
         f.write(infected_binary_content)
-    f.close()
     os.chmod(infected_binary_path, 0o0777)
 
 
