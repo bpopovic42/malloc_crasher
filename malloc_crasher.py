@@ -222,6 +222,9 @@ def get_malloc_opcodes(target_program: str) -> List[str]:
         for field in line.split():
             if field == "<malloc@plt>":
                 malloc_calls.append(line)
+    if len(malloc_calls) == 0:
+        print("No malloc calls found.\n(Did you use special compilation flags ?)")
+        exit(-1)
     return get_opcodes(malloc_calls)
 
 
