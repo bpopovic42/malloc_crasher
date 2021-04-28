@@ -151,21 +151,29 @@ def check_for_invalid_options(program_args: List[str]) -> int:
     if len(program_args) < 2:
         print("Error: No target file provided")
         return -1
-    for i in range(1, len(program_args)):
+    i: int = 1
+    while i < len(program_args):
         if program_args[i][0] != "-":
             pass
         elif program_args[i] not in ("-a", "-o", "-p", "-r"):
             print("Error: invalid option '{}'".format(program_args[i]))
             return -1
-        elif program_args[i] == "-a" and i == len(program_args) - 1:
-            print("Error: No arguments provided for option '-a'".format(program_args[i]))
-            return -1
-        elif program_args[i] == "-o" and i == len(program_args) - 1:
-            print("Error: No output dir provided for option '-o'".format(program_args[i]))
-            return -1
-        elif program_args[i] == "-o" and not os.path.isdir(program_args[i + 1]):
-            print("Error: Invalid output directory for option -o: '{}'".format(program_args[i]))
-            return -1
+        elif program_args[i] == "-a":
+            if i == len(program_args) - 1:
+                print("Error: No arguments provided for option '-a'".format(program_args[i]))
+                return -1
+            else:
+                i += 1
+        elif program_args[i] == "-o":
+            if i == len(program_args) - 1:
+                print("Error: No output dir provided for option '-o'".format(program_args[i]))
+                return -1
+            elif not os.path.isdir(program_args[i + 1]):
+                print("Error: Invalid output directory for option -o: '{}'".format(program_args[i]))
+                return -1
+            else:
+                i += 1
+        i += 1
     return 0
 
 
