@@ -25,8 +25,12 @@ EXIT STATUS:
 	1 if unprotected mallocs were found,
 	-1 in case of error (e.g, invalid command-line argument).
 ```
-
-## Limitations
+### Usage tips
+To debug a crash using this program you could either use it with the '-p' option by stopping the execution after a crash was found and by then running gdb against the resulting '.infected' version of your program.
+Or you could use the '-r' option and running gdb against the various '.infected' versions created (each of those corresponding to a specific malloc call in your original binary).  
+  
+The backtrace command and tui abilities of gdb might be useful to check out to help with your debugging.
+## Limitations & examples
 WIP
 
 ## Notes
