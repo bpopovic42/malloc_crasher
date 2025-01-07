@@ -261,6 +261,7 @@ def get_infected_binary_path(args: Args, original_binary_name: str, calls_count:
         infected_binary_path += "_" + str(calls_count).zfill(3)
     if args.has_output_destination:
         infected_binary_path = os.path.join(args.output_destination + "/" + os.path.basename(infected_binary_path))
+    infected_binary_path = "./" + infected_binary_path
     return infected_binary_path
 
 
